@@ -75,7 +75,12 @@ class LSTM(nn.Module):
         # ==========================
         # TODO: Write your code here
         # ==========================
-        pass
+        x = self.embedding(inputs)
+        output,states = self.lstm(x,hidden_states)
+        
+        out = self.classifier(output)
+        obj = torch.nn.LogSoftmax(dim=2)
+        return  obj(out),(states[0],states[1])
 
     def loss(self, log_probas, targets, mask):
         """Loss function.
@@ -106,7 +111,25 @@ class LSTM(nn.Module):
         # ==========================
         # TODO: Write your code here
         # ==========================
-        pass
+        '''
+        main_loss= 0
+        #log_probas = log_probas*mask
+        targets *= mask.long()
+        for ele_pred,ele_target in zip(log_probas,targets):
+          loss,count = 0,0
+          for i,ele in enumerate(ele_target):
+            if(ele != 0):
+              loss += ele_pred[i][ele]
+              count += 1
+          loss = loss/count
+          main_loss += (-1*loss)
+        return (main_loss/log_probas.shape[0])  
+        '''
+        log_probas=log_probas.transpose(2,1)
+        nll = nn.NLLLoss(reduction='none')
+        loss = nll(log_probas,targets)		
+        loss =  torch.multiply(loss, mask).sum(dim=1)/mask.sum(dim=1)
+        return loss.mean()
 
     def initial_states(self, batch_size, device=None):
         if device is None:
@@ -137,3 +160,4 @@ class LSTM(nn.Module):
             learn_embeddings,
             _embedding_weight=weight,
         )
+
